@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# FAISS index (regeneratable, and may contain sensitive document embeddings)
+backend/data/faiss_index/*.faiss
+backend/data/faiss_index/*.pkl
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
