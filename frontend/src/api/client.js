@@ -15,7 +15,14 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || ''
+    const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/signup')
+
+    // A 401 from login/signup just means wrong credentials or a duplicate email,
+    // that is a normal form error, not an expired session, so it should NOT
+    // force a redirect. Redirecting here was wiping the error message instantly
+    // by reloading the page before the user could ever read it.
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
