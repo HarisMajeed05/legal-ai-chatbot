@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     chat_id: str
+    sources: List[dict] = []
 
 
 class ProjectCreate(BaseModel):

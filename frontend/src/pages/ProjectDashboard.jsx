@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import client from '../api/client'
 import Sidebar from '../components/Sidebar'
-import { colors } from '../styles'
+import { useTheme } from '../context/ThemeContext'
 
 export default function ProjectDashboard() {
   const [projects, setProjects] = useState([])
@@ -10,6 +10,7 @@ export default function ProjectDashboard() {
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
+  const { palette } = useTheme()
 
   const loadProjects = async () => {
     const res = await client.get('/projects')
@@ -35,14 +36,16 @@ export default function ProjectDashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: colors.bg }}>
+    <div style={{ display: 'flex', height: '100vh', background: palette.bg }}>
       <Sidebar onNewChat={() => navigate('/chat')} />
 
       <div style={styles.main}>
         <div style={styles.headerRow}>
           <div>
-            <div style={styles.title}>Projects</div>
-            <div style={styles.subtitle}>Manage and collaborate on your AI-powered projects, organized by case or client</div>
+            <div style={{ ...styles.title, color: palette.text }}>Projects</div>
+            <div style={{ ...styles.subtitle, color: palette.subtext }}>
+              Manage and collaborate on your AI-powered projects, organized by case or client
+            </div>
           </div>
           <button style={styles.newProjectBtn} onClick={() => setShowNewForm((v) => !v)}>
             + New Project
@@ -52,7 +55,7 @@ export default function ProjectDashboard() {
         {showNewForm && (
           <form onSubmit={handleCreate} style={styles.newForm}>
             <input
-              style={styles.newInput}
+              style={{ ...styles.newInput, background: palette.panel, borderColor: palette.border, color: palette.text }}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Project name, e.g. Smith v. Johnson"
@@ -66,10 +69,10 @@ export default function ProjectDashboard() {
 
         <div style={styles.grid}>
           {projects.map((p) => (
-            <div key={p.id} style={styles.card}>
+            <div key={p.id} style={{ ...styles.card, background: palette.panel, borderColor: palette.border }}>
               <div style={styles.cardIcon}>📁</div>
-              <div style={styles.cardTitle}>{p.name}</div>
-              <div style={styles.cardMeta}>
+              <div style={{ ...styles.cardTitle, color: palette.text }}>{p.name}</div>
+              <div style={{ ...styles.cardMeta, color: palette.subtext }}>
                 Created {new Date(p.created_at).toLocaleDateString()}
               </div>
               <button style={styles.openBtn} onClick={() => navigate(`/projects/${p.id}/chat`)}>
@@ -78,7 +81,7 @@ export default function ProjectDashboard() {
             </div>
           ))}
           {projects.length === 0 && (
-            <div style={styles.emptyState}>
+            <div style={{ ...styles.emptyState, color: palette.subtext }}>
               No projects yet. Create one to organize chats by case or client.
             </div>
           )}

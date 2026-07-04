@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import client from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
   const [chats, setChats] = useState([])
   const { user, logout } = useAuth()
+  const { palette, dark, toggleDark } = useTheme()
   const navigate = useNavigate()
   const { projectId } = useParams()
 
@@ -29,10 +31,10 @@ export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
   }
 
   return (
-    <div style={styles.sidebar}>
+    <div style={{ ...styles.sidebar, background: palette.panel, borderColor: palette.border }}>
       <div style={styles.logoRow}>
         <div style={styles.logoBadge}>⚖️</div>
-        <div style={styles.logoText}>Law AI</div>
+        <div style={{ ...styles.logoText, color: palette.text }}>Law AI</div>
       </div>
 
       <button style={styles.newChatBtn} onClick={onNewChat}>
@@ -69,10 +71,13 @@ export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
       <div style={styles.footer}>
         <div style={styles.userRow}>
           <div style={styles.userAvatar}>{(user?.name || '?')[0].toUpperCase()}</div>
-          <div style={styles.userName}>{user?.name}</div>
+          <div style={{ ...styles.userName, color: palette.text }}>{user?.name}</div>
         </div>
-        <div style={styles.footerLink}>⚙️ Settings</div>
-        <div style={styles.footerLink} onClick={handleLogout}>↩ Logout</div>
+        <div style={{ ...styles.footerLink, color: palette.subtext }} onClick={toggleDark}>
+          {dark ? '☀ Light mode' : '🌙 Dark mode'}
+        </div>
+        <div style={{ ...styles.footerLink, color: palette.subtext }}>⚙ Settings</div>
+        <div style={{ ...styles.footerLink, color: palette.subtext }} onClick={handleLogout}>↩ Logout</div>
       </div>
     </div>
   )
@@ -94,8 +99,7 @@ function groupChatsByDate(chats) {
 const styles = {
   sidebar: {
     width: 260,
-    background: '#fff',
-    borderRight: '1px solid #e2e8f0',
+    borderRight: '1px solid',
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',

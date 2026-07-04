@@ -1,62 +1,95 @@
+import json
 from datetime import datetime, timezone
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 
 from app.models.schemas import ChatRequest, ChatResponse
-from app.services.rag_service import ask_legal_question
+from app.services.rag_service import ask_legal_question, stream_legal_answer
 from app.db.mongodb import chats_collection, messages_collection
 from app.core.security import get_current_user
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
-@router.post("", response_model=ChatResponse)
-async def send_message(payload: ChatRequest, current_user: dict = Depends(get_current_user)):
-    chat_id = payload.chat_id
-
-    if not chat_id:
-        new_chat = {
-            "user_id": current_user["id"],
-            "project_id": payload.project_id,
-            "title": payload.message[:60],
-            "created_at": datetime.now(timezone.utc),
-        }
-        result = await chats_collection.insert_one(new_chat)
-        chat_id = str(result.inserted_id)
-    else:
-        chat = await chats_collection.find_one({"_id": ObjectId(chat_id)})
+async def _get_or_create_chat(payload: ChatRequest, current_user: dict) -> str:
+    if payload.chat_id:
+        chat = await chats_collection.find_one({"_id": ObjectId(payload.chat_id)})
         if not chat or chat["user_id"] != current_user["id"]:
             raise HTTPException(status_code=404, detail="Chat not found")
+        return payload.chat_id
 
-    # Pull prior turns for THIS chat so the model has real conversational memory,
-    # instead of treating every message as a fresh, context-free question.
+    new_chat = {
+        "user_id": current_user["id"],
+        "project_id": payload.project_id,
+        "title": payload.message[:60],
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await chats_collection.insert_one(new_chat)
+    return str(result.inserted_id)
+
+
+async def _get_history(chat_id: str) -> list[dict]:
     cursor = messages_collection.find({"chat_id": chat_id}).sort("timestamp", 1)
-    history = await cursor.to_list(length=50)
+    return await cursor.to_list(length=50)
 
-    try:
-        answer = await ask_legal_question(payload.message, history=history)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM request failed: {e}")
 
+async def _save_turn(chat_id: str, user_message: str, answer: str, sources: list[dict]):
     await messages_collection.insert_many(
         [
             {
                 "chat_id": chat_id,
                 "role": "user",
-                "content": payload.message,
+                "content": user_message,
                 "timestamp": datetime.now(timezone.utc),
             },
             {
                 "chat_id": chat_id,
                 "role": "assistant",
                 "content": answer,
+                "sources": sources,
                 "timestamp": datetime.now(timezone.utc),
             },
         ]
     )
 
-    return ChatResponse(answer=answer, chat_id=chat_id)
+
+@router.post("", response_model=ChatResponse)
+async def send_message(payload: ChatRequest, current_user: dict = Depends(get_current_user)):
+    chat_id = await _get_or_create_chat(payload, current_user)
+    history = await _get_history(chat_id)
+
+    try:
+        result = await ask_legal_question(payload.message, history=history, project_id=payload.project_id)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {e}")
+
+    await _save_turn(chat_id, payload.message, result["answer"], result["sources"])
+
+    return ChatResponse(answer=result["answer"], chat_id=chat_id, sources=result["sources"])
+
+
+@router.post("/stream")
+async def send_message_stream(payload: ChatRequest, current_user: dict = Depends(get_current_user)):
+    chat_id = await _get_or_create_chat(payload, current_user)
+    history = await _get_history(chat_id)
+
+    async def event_generator():
+        # First event tells the frontend which chat_id to adopt, before any tokens arrive.
+        yield f"data: {json.dumps({'type': 'chat_id', 'chat_id': chat_id})}\n\n"
+
+        try:
+            async for event in stream_legal_answer(payload.message, history=history, project_id=payload.project_id):
+                if event["type"] == "token":
+                    yield f"data: {json.dumps({'type': 'token', 'text': event['text']})}\n\n"
+                elif event["type"] == "done":
+                    await _save_turn(chat_id, payload.message, event["answer"], event["sources"])
+                    yield f"data: {json.dumps({'type': 'done', 'sources': event['sources']})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.get("/{chat_id}/history")

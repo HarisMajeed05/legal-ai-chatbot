@@ -20,7 +20,18 @@ export default function Signup() {
       await signup(name, email, password)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.')
+      if (err.response) {
+        const detail = err.response.data?.detail
+        setError(
+          typeof detail === 'string'
+            ? detail
+            : `Signup failed (server responded with status ${err.response.status}). Check the backend terminal for the full error.`
+        )
+      } else if (err.request) {
+        setError('Could not reach the backend at all. Is it running on port 8000, and does CORS allow this origin?')
+      } else {
+        setError(`Unexpected error: ${err.message}`)
+      }
     } finally {
       setLoading(false)
     }

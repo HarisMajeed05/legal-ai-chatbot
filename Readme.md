@@ -104,6 +104,11 @@ mixtral-8x7b-32768             alternative architecture
 - [x] Conversation memory (chat history passed to the model, not just single-turn Q&A)
 - [x] Multiple independent chats, grouped under projects (cases/clients)
 - [x] Sidebar navigation, project dashboard, login/logout
-- [ ] Document ingestion endpoint (PDF upload, chunk, embed into FAISS)
-- [ ] Streaming responses instead of a single blocking reply
+- [x] Document ingestion (PDF upload per project, chunked and embedded into FAISS)
+- [x] Project-scoped retrieval (one project's documents never leak into another's answers)
+- [x] Source citations on every answer (which uploaded document backed it)
+- [x] Streaming responses (tokens appear as they're generated, not one blocking wait)
+- [x] Message actions (copy, regenerate)
+- [x] Dark mode, persisted across sessions
 - [ ] Role-based access for shared projects (multiple members per case)
+- [ ] OCR fallback for scanned PDFs without extractable text
