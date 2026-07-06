@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import client from '../api/client'
 import { useTheme } from '../context/ThemeContext'
+import { brand, fonts } from '../styles'
 
 export default function DocumentPanel({ projectId }) {
   const [documents, setDocuments] = useState([])
@@ -62,7 +63,7 @@ export default function DocumentPanel({ projectId }) {
         style={{ display: 'none' }}
         id="doc-upload-input"
       />
-      <label htmlFor="doc-upload-input" style={styles.uploadBtn}>
+      <label htmlFor="doc-upload-input" style={{ ...styles.uploadBtn, borderColor: brand.gold, color: brand.gold }}>
         {uploading ? 'Uploading and indexing...' : '+ Upload PDF'}
       </label>
 
@@ -70,7 +71,7 @@ export default function DocumentPanel({ projectId }) {
 
       <div style={styles.list}>
         {documents.map((d) => (
-          <div key={d.id} style={{ ...styles.docItem, borderColor: palette.border }}>
+          <div key={d.id} className="doc-card" style={{ ...styles.docItem, borderColor: palette.border }}>
             <div style={{ color: palette.text, fontSize: 13, fontWeight: 600 }}>{d.filename}</div>
             <div style={{ color: palette.subtext, fontSize: 11.5 }}>{d.chunk_count} chunks indexed</div>
           </div>
@@ -91,7 +92,7 @@ const styles = {
     height: '100vh',
     overflowY: 'auto',
   },
-  title: { fontSize: 14, fontWeight: 700, marginBottom: 4 },
+  title: { fontFamily: fonts.serif, fontSize: 15, fontWeight: 700, marginBottom: 4 },
   subtitle: { fontSize: 11.5, lineHeight: 1.4, marginBottom: 14 },
   uploadBtn: {
     display: 'block',

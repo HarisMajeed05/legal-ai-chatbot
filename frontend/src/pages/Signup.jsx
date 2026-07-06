@@ -40,7 +40,7 @@ export default function Signup() {
   return (
     <div style={s.page}>
       <div style={s.card}>
-        <div style={s.logoBadge}>⚖️</div>
+        <div style={s.logoBadge}>⚖</div>
         <div style={s.title}>Create your account</div>
         <div style={s.subtitle}>Start using the Law AI Assistant</div>
 

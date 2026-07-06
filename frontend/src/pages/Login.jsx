@@ -39,7 +39,7 @@ export default function Login() {
   return (
     <div style={s.page}>
       <div style={s.card}>
-        <div style={s.logoBadge}>⚖️</div>
+        <div style={s.logoBadge}>⚖</div>
         <div style={s.title}>Welcome back</div>
         <div style={s.subtitle}>Log in to your Law AI Assistant account</div>
 
