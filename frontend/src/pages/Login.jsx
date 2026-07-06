@@ -64,6 +64,11 @@ export default function Login() {
             placeholder="••••••••"
             required
           />
+          <div style={{ textAlign: 'right', marginTop: -10, marginBottom: 16 }}>
+            <Link to="/forgot-password" style={{ fontSize: 12, color: '#6b7280', textDecoration: 'underline' }}>
+              Forgot password?
+            </Link>
+          </div>
           <button style={{ ...s.button, opacity: loading ? 0.6 : 1 }} disabled={loading}>
             {loading ? 'Logging in...' : 'Log in'}
           </button>

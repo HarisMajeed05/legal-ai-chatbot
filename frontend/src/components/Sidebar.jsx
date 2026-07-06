@@ -30,7 +30,7 @@ export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
   }, [refreshKey, projectId])
 
   useEffect(() => {
-    client.get('/projects').then((res) => setProjects(res.data)).catch(() => { })
+    client.get('/projects').then((res) => setProjects(res.data)).catch(() => {})
   }, [])
 
   const currentProject = projects.find((p) => p.id === projectId)

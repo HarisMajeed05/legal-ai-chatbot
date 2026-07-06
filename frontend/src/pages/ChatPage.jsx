@@ -165,6 +165,29 @@ export default function ChatPage() {
 
   const handleCopy = (text) => navigator.clipboard.writeText(text)
 
+  const handleExport = async () => {
+    if (!chatId) return
+    const token = localStorage.getItem('token')
+    try {
+      const res = await fetch(`${API_BASE}/chat/${chatId}/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'chat-export.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      window.alert('Could not export this chat right now.')
+    }
+  }
+
   const handleRegenerate = (index) => {
     const userMsg = messages[index - 1]
     if (userMsg?.role === 'user') {
@@ -182,12 +205,17 @@ export default function ChatPage() {
       <div style={{ ...styles.main, background: palette.bg }}>
         <header style={{ ...styles.header, borderColor: palette.border, background: palette.panel }}>
           <div style={styles.logoBadge}>⚖</div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ ...styles.headerTitle, color: palette.text }}>Law AI Assistant</div>
             <div style={{ ...styles.headerSubtitle, color: palette.subtext }}>
               Ask me anything about legal concepts, case law, or procedures
             </div>
           </div>
+          {chatId && (
+            <button style={styles.exportBtn} onClick={handleExport}>
+              Export PDF
+            </button>
+          )}
         </header>
 
         <main style={styles.chatArea}>
@@ -231,12 +259,12 @@ export default function ChatPage() {
                         ...(m.role === 'user'
                           ? styles.bubbleUser
                           : {
-                            background: palette.bubbleAssistantBg,
-                            color: palette.bubbleAssistantText,
-                            border: `1px solid ${palette.border}`,
-                            borderLeft: `3px solid ${brand.gold}`,
-                            borderRadius: '4px 14px 14px 4px',
-                          }),
+                              background: palette.bubbleAssistantBg,
+                              color: palette.bubbleAssistantText,
+                              border: `1px solid ${palette.border}`,
+                              borderLeft: `3px solid ${brand.gold}`,
+                              borderRadius: '4px 14px 14px 4px',
+                            }),
                         ...(m.error ? styles.bubbleError : {}),
                       }}
                     >
@@ -246,10 +274,16 @@ export default function ChatPage() {
 
                     {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
                       <div style={styles.sourcesBox}>
-                        <div style={styles.sourcesLabel}>Sources</div>
+                        <div style={styles.sourcesLabel}>Grounded in your documents</div>
                         {m.sources.map((s, si) => (
-                          <div key={si} style={styles.sourceItem}>📄 {s.filename}</div>
+                          <div key={si} style={styles.sourceItem}>{s.filename}</div>
                         ))}
+                      </div>
+                    )}
+
+                    {m.role === 'assistant' && !m.streaming && m.sources && m.sources.length === 0 && !m.error && projectId && (
+                      <div style={styles.generalKnowledgeBadge}>
+                        General legal knowledge, no matching documents found in this project
                       </div>
                     )}
 
@@ -315,6 +349,18 @@ const styles = {
   },
   headerTitle: { fontFamily: fonts.serif, fontSize: 19, fontWeight: 700 },
   headerSubtitle: { fontSize: 12.5, marginTop: 2 },
+  exportBtn: {
+    padding: '8px 16px',
+    borderRadius: 3,
+    border: `1px solid ${brand.gold}`,
+    background: 'transparent',
+    color: brand.gold,
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 0.3,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
   chatArea: { flex: 1, overflowY: 'auto', padding: '28px' },
   emptyState: {
     height: '100%',
@@ -382,6 +428,13 @@ const styles = {
   },
   sourcesLabel: { fontSize: 10.5, fontWeight: 700, color: brand.gold, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
   sourceItem: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  generalKnowledgeBadge: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#94a3b8',
+    fontStyle: 'italic',
+    marginLeft: 4,
+  },
   actionsRow: { display: 'flex', gap: 12, marginTop: 6, marginLeft: 6 },
   actionBtn: { background: 'none', border: 'none', color: '#94a3b8', fontSize: 11.5, cursor: 'pointer', padding: 0 },
   footer: { padding: '16px 28px 20px', borderTop: '1px solid' },

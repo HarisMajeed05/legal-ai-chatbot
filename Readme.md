@@ -106,9 +106,49 @@ mixtral-8x7b-32768             alternative architecture
 - [x] Sidebar navigation, project dashboard, login/logout
 - [x] Document ingestion (PDF upload per project, chunked and embedded into FAISS)
 - [x] Project-scoped retrieval (one project's documents never leak into another's answers)
-- [x] Source citations on every answer (which uploaded document backed it)
-- [x] Streaming responses (tokens appear as they're generated, not one blocking wait)
+- [x] Source citations on every answer, with a clear badge distinguishing document-grounded answers from general knowledge
+- [x] Streaming responses
 - [x] Message actions (copy, regenerate)
 - [x] Dark mode, persisted across sessions
-- [ ] Role-based access for shared projects (multiple members per case)
-- [ ] OCR fallback for scanned PDFs without extractable text
+- [x] Real document deletion (FAISS vectors removed, not just the database record)
+- [x] Project deletion, including all its chats and documents
+- [x] OCR fallback for scanned PDFs (requires extra setup, see below)
+- [x] Rate limiting on chat and document upload
+- [x] Password reset flow over email (requires SMTP setup, see below)
+- [x] PDF export of any chat
+- [x] Shared projects, invite collaborators by email
+
+## OCR setup (optional, only needed for scanned PDFs)
+
+Normal PDFs with a text layer work without any of this. OCR only kicks in
+when a PDF has no extractable text at all, usually a scanned document.
+
+1. Install the Python packages, already listed in requirements/environment:
+   `pytesseract`, `pdf2image`
+2. Install Tesseract OCR (a system binary, not a Python package):
+   Windows: download the installer from the UB Mannheim Tesseract build,
+   add its install folder to your PATH.
+3. Install Poppler (needed by pdf2image to render PDF pages as images):
+   Windows: download a Poppler release, add its `bin` folder to your PATH.
+
+If either is missing, uploading a scanned PDF fails with a clear message
+rather than crashing the app, normal text-based PDFs are unaffected either way.
+
+## Email setup (optional, only needed for password reset)
+
+Password reset needs an SMTP relay to actually send the email. Without this
+configured, the forgot-password endpoint still runs safely, it just logs the
+failure server-side instead of sending anything, and always returns the same
+generic message to the frontend either way.
+
+Fill in these in your `.env`:
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+SMTP_FROM=your_email@gmail.com
+```
+For Gmail specifically, this needs an App Password, not your normal account
+password, generated from your Google Account security settings. Any other
+SMTP relay, SendGrid, Mailgun, works the same way with their own credentials.

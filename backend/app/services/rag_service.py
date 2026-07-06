@@ -58,14 +58,25 @@ def _load_or_create_vectorstore() -> FAISS:
 _vectorstore = _load_or_create_vectorstore()
 
 
-def add_document_to_index(text: str, project_id: str, filename: str) -> int:
-    """Split a document into chunks and add it to the shared FAISS index, tagged
-    with the project it belongs to so retrieval can be scoped per project."""
+def add_document_to_index(text: str, project_id: str, filename: str) -> tuple[int, list[str]]:
+    """Split a document into chunks, add it to the shared FAISS index tagged
+    with its project, and return the chunk count plus the FAISS ids so the
+    caller can later delete exactly these vectors if the document is removed."""
     chunks = _splitter.split_text(text)
     metadatas = [{"project_id": project_id, "source": filename} for _ in chunks]
-    _vectorstore.add_texts(chunks, metadatas=metadatas)
+    ids = _vectorstore.add_texts(chunks, metadatas=metadatas)
     _vectorstore.save_local(settings.faiss_index_path)
-    return len(chunks)
+    return len(chunks), ids
+
+
+def delete_document_from_index(chunk_ids: list[str]):
+    """Removes exactly the vectors belonging to one document, not the whole
+    index. Fixes the earlier limitation where deleting a document only
+    removed its database record but left its chunks searchable forever."""
+    if not chunk_ids:
+        return
+    _vectorstore.delete(chunk_ids)
+    _vectorstore.save_local(settings.faiss_index_path)
 
 
 def _build_retriever(project_id: str | None):

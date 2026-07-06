@@ -17,6 +17,12 @@ class Settings(BaseSettings):
 
     frontend_origin: str = "http://localhost:5173"
 
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+
     class Config:
         env_file = ".env"
 
