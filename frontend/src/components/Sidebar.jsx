@@ -68,10 +68,10 @@ export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
 
   return (
     <div style={styles.sidebar}>
-      <div style={styles.logoRow}>
+      <Link to="/chat" style={styles.logoRow}>
         <div style={styles.logoBadge}>⚖</div>
         <div style={styles.logoText}>Law AI</div>
-      </div>
+      </Link>
 
       <div style={styles.breadcrumbWrap}>
         <div style={styles.breadcrumb} onClick={() => setSwitcherOpen((v) => !v)}>
@@ -167,7 +167,9 @@ export default function Sidebar({ onNewChat, activeChatId, refreshKey }) {
         <div className="nav-link" style={styles.footerLink} onClick={toggleDark}>
           {dark ? '☀ Light mode' : '☾ Dark mode'}
         </div>
-        <div className="nav-link" style={styles.footerLink}>⚙ Settings</div>
+        <Link to="/settings" className="nav-link" style={{ ...styles.footerLink, display: 'block', textDecoration: 'none' }}>
+          ⚙ Settings
+        </Link>
         <div className="nav-link" style={styles.footerLink} onClick={handleLogout}>↩ Logout</div>
       </div>
     </div>
@@ -198,7 +200,7 @@ const styles = {
     padding: '22px 16px',
     color: brand.ivory,
   },
-  logoRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
+  logoRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, textDecoration: 'none', cursor: 'pointer' },
   logoBadge: {
     width: 34,
     height: 34,

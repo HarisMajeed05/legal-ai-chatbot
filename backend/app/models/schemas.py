@@ -48,3 +48,13 @@ class ChatSummary(BaseModel):
     title: str
     project_id: Optional[str] = None
     created_at: datetime
+
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str

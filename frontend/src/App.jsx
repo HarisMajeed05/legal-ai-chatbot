@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ChatPage from './pages/ChatPage'
 import ProjectDashboard from './pages/ProjectDashboard'
+import Settings from './pages/Settings'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -27,6 +28,8 @@ function AppRoutes() {
       <Route path="/projects" element={<ProtectedRoute><ProjectDashboard /></ProtectedRoute>} />
       <Route path="/projects/:projectId/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/projects/:projectId/chat/:chatId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
