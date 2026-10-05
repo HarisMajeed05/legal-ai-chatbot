@@ -30,9 +30,10 @@ legal-ai-chatbot/
 │   │   ├── db/              MongoDB connection
 │   │   ├── models/         pydantic schemas
 │   │   ├── services/        RAG pipeline (FAISS plus Groq)
-│   │   └── main.py          FastAPI entrypoint
+│   │   └── main.py          FastAPI entry point
 │   ├── data/faiss_index/    vector store files
 │   ├── requirements.txt
+│   ├── environment.yml
 │   └── .env.example
 ├── frontend/
 │   ├── src/
