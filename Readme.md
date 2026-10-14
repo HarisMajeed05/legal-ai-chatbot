@@ -1,10 +1,24 @@
 # Legal AI Chatbot
 
-Enterprise style Legal AI Assistant. React frontend, FastAPI backend, MongoDB for storage, RAG pipeline using LangChain plus FAISS for retrieval, and a Groq hosted open source LLM for generation.
+A legal assistant with a React frontend and a FastAPI backend. Answers come from a RAG pipeline (LangChain and FAISS) over documents you upload to a project, and the LLM is hosted on Groq.
 
-## Why an API model instead of local deployment
+The chat model runs on Groq's servers, so the backend does not need a GPU. Only the small embedding model runs locally, on CPU.
 
-The chat model runs through the Groq API rather than being deployed locally. This means the backend has no GPU requirement at all. It runs identically on a CPU only laptop or a GPU workstation, since the actual model computation happens on Groq's servers. Only the embedding model (used for retrieval, not generation) runs locally, and it is small enough to run comfortably on CPU.
+## Features
+
+- Sign up and log in with JWT
+- Projects (for example cases or clients), each with its own chats and documents
+- PDF upload, split into chunks and stored in FAISS
+- Retrieval stays inside one project, so documents from one project never show up in another
+- Source citations, with a badge that separates answers from your documents and general knowledge answers
+- Conversation memory, streaming replies, copy and regenerate
+- OCR for scanned PDFs (optional setup)
+- Deleting a document removes its vectors from FAISS. Deleting a project removes its chats and documents.
+- Rate limits on chat and document upload
+- Password reset by email (optional setup)
+- Export a chat to PDF
+- Share a project with collaborators by email
+- Dark mode
 
 ## Tech stack
 
@@ -13,42 +27,36 @@ The chat model runs through the Groq API rather than being deployed locally. Thi
 | Frontend | React (Vite) |
 | Backend | FastAPI |
 | Database | MongoDB |
-| Orchestration | LangChain |
-| Vector store | FAISS |
-| LLM | Groq API (Llama 3.3 70B by default, swappable) |
-| Embeddings | sentence-transformers, local, CPU |
-| Environment | Conda (environment.yml), pip/venv also supported via requirements.txt |
+| RAG | LangChain and FAISS |
+| LLM | Groq API (default `openai/gpt-oss-120b`) |
+| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`), local on CPU |
+| Environment | Conda (`environment.yml`). `requirements.txt` works for pip. |
 
 ## Project structure
 
 ```
-legal-ai-chatbot/
-├── backend/
-│   ├── app/
-│   │   ├── api/           routes: chat, projects
-│   │   ├── core/           settings/config
-│   │   ├── db/              MongoDB connection
-│   │   ├── models/         pydantic schemas
-│   │   ├── services/        RAG pipeline (FAISS plus Groq)
-│   │   └── main.py          FastAPI entry point
-│   ├── data/faiss_index/    vector store files
-│   ├── requirements.txt
-│   ├── environment.yml
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
-└── .gitignore
+backend/
+  app/
+    api/        auth, chat, documents, projects
+    core/       settings, email, rate limit, security
+    db/         MongoDB connection
+    models/     Pydantic schemas
+    services/   RAG pipeline (FAISS and Groq)
+    main.py
+  environment.yml
+  requirements.txt
+frontend/
+  src/
+    api/ components/ context/ pages/
+    App.jsx  main.jsx
+  package.json
 ```
 
 ## Setup
 
-### 1. Get a Groq API key
+### 1. Groq API key
 
-Create a free account at console.groq.com and generate an API key. The free tier is generous enough for development and demo use.
+Create a free account at [console.groq.com](https://console.groq.com) and make an API key.
 
 ### 2. Backend
 
@@ -56,28 +64,24 @@ Create a free account at console.groq.com and generate an API key. The free tier
 cd backend
 conda env create -f environment.yml
 conda activate legal-ai-backend
-
-copy .env.example .env       # Windows
-# cp .env.example .env       # macOS/Linux
 ```
 
-Edit `.env` and set `GROQ_API_KEY` and `JWT_SECRET_KEY`. If MongoDB is running locally, the default `MONGODB_URI` works as is.
+Create a file named `.env` in `backend/`:
 
-Run MongoDB locally (if not already running), then start the API:
+```
+GROQ_API_KEY=your_key
+JWT_SECRET_KEY=a_long_random_string
+GROQ_MODEL=openai/gpt-oss-120b
+MONGODB_URI=mongodb://localhost:27017
+```
+
+`MONGODB_URI` defaults to a local MongoDB, so you can leave it out if MongoDB runs on your machine. Start MongoDB, then run the API:
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-Visit `http://localhost:8000/api/health`, it should return `{"status": "ok"}`.
-
-`requirements.txt` is kept alongside `environment.yml` as a pip only alternative, in case anyone working on this prefers venv over conda. Either installs the exact same package set.
-
-To export your exact environment for sharing or reproducing elsewhere:
-
-```bash
-conda env export --from-history > environment.yml
-```
+Open http://localhost:8000/api/health. It should return `{"status": "ok"}`.
 
 ### 3. Frontend
 
@@ -87,62 +91,30 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173`.
+Open http://localhost:5173.
 
-## Swapping the LLM
+## Changing the model
 
-`GROQ_MODEL` in `.env` controls which hosted model answers questions. Any Groq supported model works without code changes, examples:
+Set `GROQ_MODEL` in `.env`. Groq retires models from time to time, so check the [supported models page](https://console.groq.com/docs/models) for current IDs. At the time of writing, `openai/gpt-oss-120b`, `openai/gpt-oss-20b` and `qwen/qwen3.6-27b` are listed as replacements for the retired Llama 3 models.
 
-```
-llama-3.3-70b-versatile     most capable, default
-llama-3.1-8b-instant           fastest, lighter
-mixtral-8x7b-32768             alternative architecture
-```
+## Other settings
 
-## Roadmap
+These can also go in `.env`: `MONGODB_DB_NAME`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `FAISS_INDEX_PATH`, `EMBEDDING_MODEL` and `FRONTEND_ORIGIN`.
 
-- [x] User authentication (signup/login, JWT, scoped to each user)
-- [x] Conversation memory (chat history passed to the model, not just single-turn Q&A)
-- [x] Multiple independent chats, grouped under projects (cases/clients)
-- [x] Sidebar navigation, project dashboard, login/logout
-- [x] Document ingestion (PDF upload per project, chunked and embedded into FAISS)
-- [x] Project-scoped retrieval (one project's documents never leak into another's answers)
-- [x] Source citations on every answer, with a clear badge distinguishing document-grounded answers from general knowledge
-- [x] Streaming responses
-- [x] Message actions (copy, regenerate)
-- [x] Dark mode, persisted across sessions
-- [x] Real document deletion (FAISS vectors removed, not just the database record)
-- [x] Project deletion, including all its chats and documents
-- [x] OCR fallback for scanned PDFs (requires extra setup, see below)
-- [x] Rate limiting on chat and document upload
-- [x] Password reset flow over email (requires SMTP setup, see below)
-- [x] PDF export of any chat
-- [x] Shared projects, invite collaborators by email
+## OCR (optional, for scanned PDFs)
 
-## OCR setup (optional, only needed for scanned PDFs)
+PDFs with a text layer work without this. OCR runs only when a PDF has no extractable text.
 
-Normal PDFs with a text layer work without any of this. OCR only kicks in
-when a PDF has no extractable text at all, usually a scanned document.
+1. The Python packages `pytesseract` and `pdf2image` are already in the requirements.
+2. Install Tesseract OCR. On Windows, use the UB Mannheim build and add its folder to your PATH.
+3. Install Poppler, which `pdf2image` needs to render pages. On Windows, download a release and add its `bin` folder to your PATH.
 
-1. Install the Python packages, already listed in requirements/environment:
-   `pytesseract`, `pdf2image`
-2. Install Tesseract OCR (a system binary, not a Python package):
-   Windows: download the installer from the UB Mannheim Tesseract build,
-   add its install folder to your PATH.
-3. Install Poppler (needed by pdf2image to render PDF pages as images):
-   Windows: download a Poppler release, add its `bin` folder to your PATH.
+If either tool is missing, uploading a scanned PDF fails with a clear message. Normal PDFs are not affected.
 
-If either is missing, uploading a scanned PDF fails with a clear message
-rather than crashing the app, normal text-based PDFs are unaffected either way.
+## Email (optional, for password reset)
 
-## Email setup (optional, only needed for password reset)
+Add these to `.env`:
 
-Password reset needs an SMTP relay to actually send the email. Without this
-configured, the forgot-password endpoint still runs safely, it just logs the
-failure server-side instead of sending anything, and always returns the same
-generic message to the frontend either way.
-
-Fill in these in your `.env`:
 ```
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -150,6 +122,7 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
 SMTP_FROM=your_email@gmail.com
 ```
-For Gmail specifically, this needs an App Password, not your normal account
-password, generated from your Google Account security settings. Any other
-SMTP relay, SendGrid, Mailgun, works the same way with their own credentials.
+
+For Gmail, use an App Password from your Google Account security settings, not your normal password. Other SMTP services such as SendGrid or Mailgun work the same way.
+
+Without SMTP settings, the forgot password endpoint still works safely. It logs the failure on the server and returns the same generic message.
